@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { UserProvider } from "@/contexts/UserContext";
 import "./globals.css";
 
@@ -19,13 +20,14 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-TW">
-      <head>
-        <script src="https://static.line-scdn.net/liff/edge/versions/2.29.0/sdk.js" async />
-      </head>
       <body>
         <UserProvider>
           <div className="max-w-md mx-auto min-h-screen relative">{children}</div>
         </UserProvider>
+        <Script
+          src="https://static.line-scdn.net/liff/edge/versions/2.29.0/sdk.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
