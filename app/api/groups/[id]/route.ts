@@ -41,3 +41,33 @@ export async function GET(
 
   return NextResponse.json({ ...group, balances });
 }
+
+// PATCH /api/groups/:id — update name, icon, baseCurrency
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const { name, icon, baseCurrency } = await req.json();
+
+  const group = await prisma.group.update({
+    where: { id },
+    data: {
+      ...(name && { name }),
+      ...(icon !== undefined && { icon }),
+      ...(baseCurrency && { baseCurrency }),
+    },
+  });
+
+  return NextResponse.json(group);
+}
+
+// DELETE /api/groups/:id — delete group
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  await prisma.group.delete({ where: { id } });
+  return NextResponse.json({ success: true });
+}

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/Button";
-import { Users } from "lucide-react";
+import Image from "next/image";
 
 const DEMO_USERS = [
   { lineUserId: "demo_alice", displayName: "Alice", avatarUrl: null },
@@ -159,8 +159,8 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-line-green/10 to-white">
       <div className="flex-1 flex flex-col items-center justify-center px-8 pt-16 pb-8">
-        <div className="w-20 h-20 bg-line-green rounded-3xl flex items-center justify-center mb-6 shadow-lg">
-          <Users className="w-10 h-10 text-white" />
+        <div className="w-20 h-20 rounded-3xl overflow-hidden mb-6 shadow-lg">
+          <Image src="/appicon.png" alt="SplitGo" width={80} height={80} className="w-full h-full object-cover" />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">SplitGo</h1>
         <p className="text-gray-500 text-center text-base leading-relaxed">

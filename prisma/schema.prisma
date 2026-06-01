@@ -27,6 +27,7 @@ model User {
 model Group {
   id           String   @id @default(cuid())
   name         String
+  icon         String   @default("✈️")
   baseCurrency String   @default("TWD") @map("base_currency")
   inviteCode   String   @unique @map("invite_code")
   createdById  String   @map("created_by")

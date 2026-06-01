@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { formatCurrency } from "@/lib/utils";
 import {
   ArrowLeft, Plus, Copy, Check, Calculator, Receipt,
-  TrendingUp, TrendingDown, Minus
+  TrendingUp, TrendingDown, Minus, Settings
 } from "lucide-react";
 
 interface User {
@@ -65,6 +65,7 @@ interface Balance {
 interface Group {
   id: string;
   name: string;
+  icon: string;
   baseCurrency: string;
   inviteCode: string;
   members: { user: User }[];
@@ -164,10 +165,17 @@ export default function GroupDetailPage() {
           <button onClick={() => router.back()} className="p-1.5 rounded-full hover:bg-gray-100">
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
+          <span className="text-2xl">{group.icon ?? "✈️"}</span>
           <div className="flex-1 min-w-0">
             <h1 className="font-bold text-gray-900 truncate">{group.name}</h1>
             <p className="text-xs text-gray-500">{group.members.length} 位成員 · {group.baseCurrency}</p>
           </div>
+          <button
+            onClick={() => router.push(`/groups/${groupId}/settings`)}
+            className="p-1.5 rounded-full hover:bg-gray-100"
+          >
+            <Settings className="w-5 h-5 text-gray-500" />
+          </button>
           <button
             onClick={copyInviteLink}
             className="flex items-center gap-1.5 text-xs bg-line-green/10 text-line-green px-3 py-1.5 rounded-full font-medium"

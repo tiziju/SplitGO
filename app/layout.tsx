@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   title: "SplitGo — 輕鬆分帳",
   description: "LINE Mini App 分帳系統，旅遊、室友、家庭記帳一把罩",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/appicon.png",
+    apple: "/appicon.png",
+  },
 };
 
 export const viewport: Viewport = {
