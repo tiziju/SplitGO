@@ -79,7 +79,10 @@ export default function LoginPage() {
       const liff = (await import("@line/liff")).default;
 
       setError("步驟2：初始化 LIFF...");
-      await liff.init({ liffId: LIFF_ID });
+      await Promise.race([
+        liff.init({ liffId: LIFF_ID }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("liff.init timeout (10s)")), 10000)),
+      ]);
 
       const loggedIn = liff.isLoggedIn();
       setError(`步驟3：isLoggedIn = ${loggedIn}`);
