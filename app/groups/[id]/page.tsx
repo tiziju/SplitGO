@@ -255,12 +255,20 @@ export default function GroupDetailPage() {
                       <p className="font-bold text-gray-900">
                         {formatCurrency(e.amountBase, group.baseCurrency)}
                       </p>
-                      <button
-                        onClick={() => deleteExpense(e.id)}
-                        className="text-xs text-red-400 mt-1"
-                      >
-                        刪除
-                      </button>
+                      <div className="flex gap-3 mt-1 justify-end">
+                        <button
+                          onClick={() => router.push(`/groups/${groupId}/expenses/${e.id}/edit`)}
+                          className="text-xs text-line-green"
+                        >
+                          編輯
+                        </button>
+                        <button
+                          onClick={() => deleteExpense(e.id)}
+                          className="text-xs text-red-400"
+                        >
+                          刪除
+                        </button>
+                      </div>
                     </div>
                   </div>
                   {/* Splits */}
