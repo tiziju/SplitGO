@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  lineUserId  String   @unique @map("line_user_id")
+  displayName String   @map("display_name")
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  groupMembers        GroupMember[]
+  expensePayments     ExpensePayment[]
+  expenseSplits       ExpenseSplit[]
+  sentSettlements     Settlement[] @relation("FromUser")
+  receivedSettlements Settlement[] @relation("ToUser")
+
+  @@map("users")
+}
+
+model Group {
+  id           String   @id @default(cuid())
+  name         String
+  baseCurrency String   @default("TWD") @map("base_currency")
+  inviteCode   String   @unique @map("invite_code")
+  createdById  String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  members     GroupMember[]
+  expenses    Expense[]
+  settlements Settlement[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String   @map("group_id")
+  userId   String   @map("user_id")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model Expense {
+  id         String   @id @default(cuid())
+  groupId    String   @map("group_id")
+  title      String
+  amount     Float
+  currency   String
+  fxRate     Float    @default(1) @map("fx_rate")
+  amountBase Float    @map("amount_base")
+  splitType  String   @default("EQUAL") @map("split_type")
+  category   String?
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  group    Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  payments ExpensePayment[]
+  splits   ExpenseSplit[]
+
+  @@map("expenses")
+}
+
+/// 記錄每筆消費中各付款人實際付出的金額（支援多人付款）
+model ExpensePayment {
+  id         String @id @default(cuid())
+  expenseId  String @map("expense_id")
+  userId     String @map("user_id")
+  amount     Float                   // 原始幣別金額
+  amountBase Float  @map("amount_base") // 換算後基準幣別金額
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([expenseId, userId])
+  @@map("expense_payments")
+}
+
+model ExpenseSplit {
+  id          String  @id @default(cuid())
+  expenseId   String  @map("expense_id")
+  userId      String  @map("user_id")
+  amountBase  Float   @map("amount_base")
+  ratio       Float?
+  fixedAmount Float?  @map("fixed_amount")
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([expenseId, userId])
+  @@map("expense_splits")
+}
+
+model Settlement {
+  id         String    @id @default(cuid())
+  groupId    String    @map("group_id")
+  fromUserId String    @map("from_user_id")
+  toUserId   String    @map("to_user_id")
+  amountBase Float     @map("amount_base")
+  currency   String    @default("TWD")
+  status     String    @default("PENDING")
+  settledAt  DateTime? @map("settled_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("FromUser", fields: [fromUserId], references: [id])
+  toUser   User  @relation("ToUser", fields: [toUserId], references: [id])
+
+  @@map("settlements")
+}
