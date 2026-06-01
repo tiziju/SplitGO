@@ -75,11 +75,20 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
+      setError("步驟1：載入 LIFF SDK...");
       const liff = (await import("@line/liff")).default;
+
+      setError("步驟2：初始化 LIFF...");
       await liff.init({ liffId: LIFF_ID });
-      if (liff.isLoggedIn()) {
-        // 已登入（在 LINE 內建瀏覽器中）
+
+      const loggedIn = liff.isLoggedIn();
+      setError(`步驟3：isLoggedIn = ${loggedIn}`);
+
+      if (loggedIn) {
+        setError("步驟4：取得個人資料...");
         const profile = await liff.getProfile();
+
+        setError(`步驟5：呼叫 API... (userId=${profile.userId.slice(0, 8)})`);
         const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -89,18 +98,20 @@ export default function LoginPage() {
             avatarUrl: profile.pictureUrl ?? null,
           }),
         });
-        if (!res.ok) throw new Error(`API error ${res.status}`);
+        if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+
+        setError("步驟6：登入成功，跳轉中...");
         const user = await res.json();
         setUser(user);
         router.push("/groups");
       } else {
-        // 跳轉到 LINE 授權頁（外部瀏覽器）
+        setError("步驟3b：跳轉 LINE 授權...");
         liff.login({ redirectUri: window.location.href });
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("LIFF login failed", e);
-      setError(`登入失敗：${msg}`);
+      setError(`❌ 失敗：${msg}`);
       setLoading(false);
     }
   };
