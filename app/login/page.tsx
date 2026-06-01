@@ -39,7 +39,9 @@ export default function LoginPage() {
 
     (async () => {
       try {
-        const liff = (await import("@line/liff")).default;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const liff = (window as any).liff;
+        if (!liff) { setLoading(false); sessionStorage.removeItem("liff_completing"); return; }
         await liff.init({ liffId: LIFF_ID });
         if (!liff.isLoggedIn()) {
           setError("登入失敗，請重試");
@@ -75,8 +77,22 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      setError("步驟1：載入 LIFF SDK...");
-      const liff = (await import("@line/liff")).default;
+      setError("步驟1：等待 LIFF SDK...");
+      // 等 CDN script 載完
+      await new Promise<void>((resolve, reject) => {
+        const check = () => {
+          if (typeof window !== "undefined" && (window as unknown as { liff?: unknown }).liff) {
+            resolve();
+          } else {
+            setTimeout(check, 100);
+          }
+        };
+        setTimeout(() => reject(new Error("LIFF SDK 載入逾時")), 10000);
+        check();
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const liff = (window as any).liff;
 
       setError("步驟2：初始化 LIFF...");
       await Promise.race([
