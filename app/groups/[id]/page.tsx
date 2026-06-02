@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES } from "@/lib/currencies";
 import { ArrowLeft, Plus, Copy, Check, Settings, ChevronDown, RotateCcw } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 /* ── Types ── */
 const CATEGORY_COLORS: Record<string, string> = {
@@ -56,6 +57,10 @@ export default function GroupDetailPage() {
   const [tab, setTab] = useState<"expenses" | "settle" | "stats">("expenses");
   const [copied, setCopied] = useState(false);
   const [settling, setSettling] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean; title: string; message: string;
+    onConfirm: () => void; danger?: boolean;
+  }>({ open: false, title: "", message: "", onConfirm: () => {} });
   const [settleCurrency, setSettleCurrency] = useState("");
   const [period, setPeriod] = useState<Period>("all");
   const [showPeriodMenu, setShowPeriodMenu] = useState(false);
@@ -109,11 +114,18 @@ export default function GroupDetailPage() {
     await navigator.clipboard.writeText(`${window.location.origin}/invite/${group?.inviteCode}`);
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
-  const settle = async () => {
-    if (!confirm("重新計算結算清單？")) return;
-    setSettling(true);
-    await fetch("/api/settlements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ groupId }) });
-    await fetchGroup(); setSettling(false);
+  const showConfirm = (title: string, message: string, onConfirm: () => void, danger = false) => {
+    setConfirmDialog({ open: true, title, message, onConfirm, danger });
+  };
+  const closeConfirm = () => setConfirmDialog((p) => ({ ...p, open: false }));
+
+  const settle = () => {
+    showConfirm("重新計算結算清單", "將清除目前的待還款清單並重新計算，確定繼續？", async () => {
+      closeConfirm();
+      setSettling(true);
+      await fetch("/api/settlements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ groupId }) });
+      await fetchGroup(); setSettling(false);
+    });
   };
   // Optimistic: 立即更新畫面，背景打 API
   const markSettlement = (id: string, status: "DONE" | "PENDING") => {
@@ -124,13 +136,14 @@ export default function GroupDetailPage() {
       ),
     } : prev);
     fetch(`/api/settlements/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) })
-      .then(() => fetchGroup()); // 背景同步確保餘額正確
+      .then(() => fetchGroup());
   };
   const deleteExpense = (id: string) => {
-    if (!confirm("確定要刪除這筆消費嗎？")) return;
-    // 立即從畫面移除
-    setGroup((prev) => prev ? { ...prev, expenses: prev.expenses.filter((e) => e.id !== id) } : prev);
-    fetch(`/api/expenses/${id}`, { method: "DELETE" }).then(() => fetchGroup());
+    showConfirm("刪除消費", "確定要刪除這筆消費嗎？刪除後無法復原。", () => {
+      closeConfirm();
+      setGroup((prev) => prev ? { ...prev, expenses: prev.expenses.filter((e) => e.id !== id) } : prev);
+      fetch(`/api/expenses/${id}`, { method: "DELETE" }).then(() => fetchGroup());
+    }, true);
   };
   const copyTextSummary = () => {
     if (!group) return;
@@ -495,6 +508,16 @@ export default function GroupDetailPage() {
           <Plus className="w-5 h-5" /> 新增消費
         </button>
       </div>
+
+      {/* ── Confirm Dialog ── */}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        danger={confirmDialog.danger}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

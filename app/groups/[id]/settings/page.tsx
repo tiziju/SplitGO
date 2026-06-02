@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { SUPPORTED_CURRENCIES } from "@/lib/currencies";
 import { ArrowLeft, Trash2, AlertTriangle } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
 
 const GROUP_ICONS = [
@@ -81,12 +82,21 @@ export default function GroupSettingsPage() {
     router.push(`/groups/${groupId}`);
   };
 
-  const removeMember = async (memberId: string, userId: string) => {
-    if (!confirm("確定要移除此成員嗎？")) return;
-    setRemovingId(userId);
-    await fetch(`/api/groups/${groupId}/members/${userId}`, { method: "DELETE" });
-    setRemovingId(null);
-    fetchGroup();
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean; title: string; message: string; onConfirm: () => void; danger?: boolean;
+  }>({ open: false, title: "", message: "", onConfirm: () => {} });
+  const closeConfirm = () => setConfirmDialog((p) => ({ ...p, open: false }));
+
+  const removeMember = (memberId: string, userId: string) => {
+    setConfirmDialog({
+      open: true, title: "移除成員", message: "確定要移除此成員嗎？", danger: true,
+      onConfirm: async () => {
+        closeConfirm();
+        setRemovingId(userId);
+        await fetch(`/api/groups/${groupId}/members/${userId}`, { method: "DELETE" });
+        setRemovingId(null); fetchGroup();
+      },
+    });
   };
 
   const deleteGroup = async () => {
@@ -226,37 +236,30 @@ export default function GroupSettingsPage() {
 
         {/* 危險操作 */}
         {isCreator && (
-          <section className="card border-red-100 space-y-3">
+          <section className="card space-y-3">
             <h2 className="font-semibold text-[#2c698d] text-[15px]">危險操作</h2>
-            {!showDeleteConfirm ? (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="w-full py-2.5 rounded-full border border-[#2c698d] text-[#2c698d] text-[13px] font-semibold hover:bg-[#EEF4FA] transition-colors"
-              >
-                刪除群組
-              </button>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-[13px] text-[#8A90B0]">確定要刪除這個群組嗎？所有消費紀錄將一併刪除，無法復原。</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={deleteGroup}
-                    className="py-2.5 rounded-full bg-[#2c698d] text-white text-[13px] font-semibold"
-                  >
-                    確定刪除
-                  </button>
-                </div>
-              </div>
-            )}
+            <button
+              onClick={() => setConfirmDialog({
+                open: true, title: "刪除群組", danger: true,
+                message: "所有消費紀錄將一併刪除，無法復原。",
+                onConfirm: async () => { closeConfirm(); await deleteGroup(); },
+              })}
+              className="w-full py-2.5 rounded-full border border-[#2c698d] text-[#2c698d] text-[13px] font-semibold hover:bg-[#EEF4FA] transition-colors"
+            >
+              刪除群組
+            </button>
           </section>
         )}
       </main>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        danger={confirmDialog.danger}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }
