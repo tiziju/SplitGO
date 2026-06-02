@@ -1,20 +1,34 @@
 const FX_CACHE: Record<string, { rates: Record<string, number>; fetchedAt: number }> = {};
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
-// Fallback static rates (TWD base) for when API is unavailable
-const FALLBACK_RATES: Record<string, number> = {
+// Fallback rates: 1 unit of foreign currency = X TWD (updated 2026-06)
+const FALLBACK_RATES_TO_TWD: Record<string, number> = {
   TWD: 1,
-  USD: 32.5,
-  JPY: 0.217,
-  EUR: 35.2,
-  GBP: 41.0,
-  KRW: 0.024,
-  HKD: 4.17,
-  SGD: 24.0,
-  AUD: 21.5,
-  CNY: 4.5,
-  THB: 0.92,
+  USD: 30.5,
+  JPY: 0.21,
+  EUR: 33.5,
+  GBP: 39.0,
+  KRW: 0.023,
+  HKD: 3.9,
+  SGD: 23.0,
+  AUD: 20.0,
+  CNY: 4.2,
+  THB: 0.88,
 };
+
+/**
+ * Compute fallback rates from `baseCurrency` perspective.
+ * rates[X] = "how many X per 1 unit of baseCurrency"
+ */
+function computeFallbackRates(baseCurrency: string): Record<string, number> {
+  const baseToTwd = FALLBACK_RATES_TO_TWD[baseCurrency] ?? 1;
+  const rates: Record<string, number> = {};
+  for (const [k, vToTwd] of Object.entries(FALLBACK_RATES_TO_TWD)) {
+    // 1 baseCurrency = baseToTwd TWD = baseToTwd / vToTwd units of k
+    rates[k] = baseToTwd / vToTwd;
+  }
+  return rates;
+}
 
 // Re-export from the client-safe module
 export { SUPPORTED_CURRENCIES } from "./currencies";
@@ -29,20 +43,7 @@ export async function getFxRates(baseCurrency = "TWD"): Promise<Record<string, n
   }
 
   if (!apiKey || apiKey === "your-api-key-here") {
-    // Return fallback rates relative to TWD
-    const rates: Record<string, number> = {};
-    if (baseCurrency === "TWD") {
-      for (const [k, v] of Object.entries(FALLBACK_RATES)) {
-        rates[k] = 1 / v;
-      }
-      rates["TWD"] = 1;
-    } else {
-      const baseInTwd = FALLBACK_RATES[baseCurrency] ?? 1;
-      for (const [k, v] of Object.entries(FALLBACK_RATES)) {
-        rates[k] = baseInTwd / v;
-      }
-    }
-    return rates;
+    return computeFallbackRates(baseCurrency);
   }
 
   try {
@@ -58,12 +59,13 @@ export async function getFxRates(baseCurrency = "TWD"): Promise<Record<string, n
     // fall through to fallback
   }
 
-  return FALLBACK_RATES;
+  // API failed — compute proper fallback rates
+  return computeFallbackRates(baseCurrency);
 }
 
 /**
- * Convert amount from sourceCurrency to targetCurrency (TWD by default).
- * Returns { convertedAmount, fxRate } where fxRate is source→target.
+ * Convert amount from sourceCurrency to baseCurrency (TWD by default).
+ * Returns { convertedAmount, fxRate } where fxRate is source→base.
  */
 export async function convertToBase(
   amount: number,
