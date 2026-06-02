@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
 import { Avatar } from "@/components/ui/Avatar";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { formatCurrency } from "@/lib/utils";
 import { Plus, LogOut, Users, ChevronRight } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 interface Group {
@@ -15,9 +16,10 @@ interface Group {
   _count: { expenses: number };
 }
 
-export default function GroupsPage() {
+function GroupsContent() {
   const { user, setUser, loading: userLoading } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -40,6 +42,14 @@ export default function GroupsPage() {
     if (!user) { router.replace("/login"); return; }
     fetchGroups();
   }, [user, userLoading, router, fetchGroups]);
+
+  // 偵測 Rich Menu deep link 參數
+  useEffect(() => {
+    if (!user || loading) return;
+    const action = searchParams.get("action");
+    if (action === "create") setShowCreate(true);
+    if (action === "join") setShowJoin(true);
+  }, [user, loading, searchParams]);
 
   const createGroup = async () => {
     if (!newGroupName.trim() || !user) return;
@@ -175,5 +185,17 @@ export default function GroupsPage() {
         </div>
       </BottomSheet>
     </div>
+  );
+}
+
+export default function GroupsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F5F6FA] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#bae8e8] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <GroupsContent />
+    </Suspense>
   );
 }
