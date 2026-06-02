@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/Button";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Users, LogOut, Receipt } from "lucide-react";
+import { Plus, LogOut, Receipt } from "lucide-react";
+import Image from "next/image";
 
 interface Group {
   id: string;
   name: string;
+  icon: string;
   baseCurrency: string;
   inviteCode: string;
   members: { user: { id: string; displayName: string; avatarUrl?: string } }[];
@@ -28,6 +30,7 @@ export default function GroupsPage() {
   const [showJoin, setShowJoin] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupCurrency, setNewGroupCurrency] = useState("TWD");
+  const [newGroupIcon, setNewGroupIcon] = useState("✈️");
   const [inviteCode, setInviteCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -51,7 +54,7 @@ export default function GroupsPage() {
     const res = await fetch("/api/groups", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newGroupName.trim(), baseCurrency: newGroupCurrency, createdById: user.id }),
+      body: JSON.stringify({ name: newGroupName.trim(), baseCurrency: newGroupCurrency, icon: newGroupIcon, createdById: user.id }),
     });
     const group = await res.json();
     setShowCreate(false);
@@ -96,8 +99,8 @@ export default function GroupsPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-line-green rounded-lg flex items-center justify-center">
-            <Users className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden">
+            <Image src="/appicon.png" alt="SplitGo" width={32} height={32} className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="font-bold text-gray-900 text-base">SplitGo</h1>
@@ -126,8 +129,8 @@ export default function GroupsPage() {
               onClick={() => router.push(`/groups/${g.id}`)}
               className="card w-full text-left flex items-center gap-3 hover:border-line-green/30 transition-colors"
             >
-              <div className="w-12 h-12 bg-line-green/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <span className="text-xl">{g.name.charAt(0)}</span>
+              <div className="w-12 h-12 bg-line-green/10 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">
+                {g.icon ?? g.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-900 truncate">{g.name}</p>
@@ -163,6 +166,17 @@ export default function GroupsPage() {
       {/* Create group sheet */}
       <BottomSheet open={showCreate} onClose={() => setShowCreate(false)} title="建立分帳群組">
         <div className="space-y-4">
+          <div>
+            <label className="label">群組圖示</label>
+            <div className="flex flex-wrap gap-2">
+              {["✈️","🏖️","🗾","🗺️","🏔️","🎌","🌏","🚢","🍜","🍣","🏠","💼","👨‍👩‍👧‍👦","🎉","💰","🛍️","🎮","⚽","🎵","🏕️"].map((emoji) => (
+                <button key={emoji} type="button" onClick={() => setNewGroupIcon(emoji)}
+                  className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center border-2 transition-all ${newGroupIcon === emoji ? "border-line-green bg-line-green/10 scale-110" : "border-gray-100 bg-gray-50"}`}>
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <label className="label">群組名稱</label>
             <input

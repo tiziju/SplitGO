@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 // POST /api/groups — create a new group
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, baseCurrency = "TWD", createdById } = body;
+  const { name, baseCurrency = "TWD", icon = "✈️", createdById } = body;
 
   if (!name || !createdById) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
   const group = await prisma.group.create({
     data: {
       name,
+      icon,
       baseCurrency,
       inviteCode,
       createdById,
