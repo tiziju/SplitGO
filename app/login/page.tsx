@@ -3,15 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
-import { Button } from "@/components/ui/Button";
 import Image from "next/image";
 
 const DEMO_USERS = [
   { lineUserId: "demo_alice", displayName: "Alice", avatarUrl: null },
-  { lineUserId: "demo_bob", displayName: "Bob", avatarUrl: null },
+  { lineUserId: "demo_bob",   displayName: "Bob",   avatarUrl: null },
   { lineUserId: "demo_carol", displayName: "Carol", avatarUrl: null },
 ];
-
 const LIFF_ID = process.env.NEXT_PUBLIC_LIFF_ID ?? "";
 const isLiffEnabled = LIFF_ID !== "" && LIFF_ID !== "your-liff-id-here";
 
@@ -22,195 +20,122 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
 
-  // LINE OAuth 跳回來後，URL 會帶有 liff.state 參數，此時自動完成登入
   useEffect(() => {
     if (!isLiffEnabled) return;
-    // 避免重複執行
     if (sessionStorage.getItem("liff_completing")) return;
-
     const url = new URL(window.location.href);
     const hasLiffState = url.searchParams.has("liff.state") || url.hash.includes("liff.state");
     const hasCode = url.searchParams.has("code");
-
-    if (!hasLiffState && !hasCode) return; // 不是從 LINE OAuth 跳回來的，不做任何事
-
+    if (!hasLiffState && !hasCode) return;
     sessionStorage.setItem("liff_completing", "1");
     setLoading(true);
-
     (async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const liff = (window as any).liff;
         if (!liff) { setLoading(false); sessionStorage.removeItem("liff_completing"); return; }
         await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) {
-          setError("登入失敗，請重試");
-          setLoading(false);
-          sessionStorage.removeItem("liff_completing");
-          return;
-        }
+        if (!liff.isLoggedIn()) { setError("登入失敗，請重試"); setLoading(false); sessionStorage.removeItem("liff_completing"); return; }
         const profile = await liff.getProfile();
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lineUserId: profile.userId,
-            displayName: profile.displayName,
-            avatarUrl: profile.pictureUrl ?? null,
-          }),
-        });
+        const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lineUserId: profile.userId, displayName: profile.displayName, avatarUrl: profile.pictureUrl ?? null }) });
         if (!res.ok) throw new Error(`API error ${res.status}`);
-        const user = await res.json();
         sessionStorage.removeItem("liff_completing");
-        setUser(user);
+        setUser(await res.json());
         router.push("/groups");
       } catch (e) {
-        console.error("LIFF auto-login failed", e);
-        setError("登入失敗，請重試");
+        setError(e instanceof Error ? e.message : String(e));
         setLoading(false);
         sessionStorage.removeItem("liff_completing");
       }
     })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line
 
   const loginWithLine = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
-      setError("步驟1：等待 LIFF SDK...");
-      // 等 CDN script 載完
-      await new Promise<void>((resolve, reject) => {
-        const check = () => {
-          if (typeof window !== "undefined" && (window as unknown as { liff?: unknown }).liff) {
-            resolve();
-          } else {
-            setTimeout(check, 100);
-          }
-        };
-        setTimeout(() => reject(new Error("LIFF SDK 載入逾時")), 10000);
-        check();
-      });
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const liff = (window as any).liff;
-
-      setError("步驟2：初始化 LIFF...");
-      await Promise.race([
-        liff.init({ liffId: LIFF_ID }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("liff.init timeout (10s)")), 10000)),
-      ]);
-
-      const loggedIn = liff.isLoggedIn();
-      setError(`步驟3：isLoggedIn = ${loggedIn}`);
-
-      if (loggedIn) {
-        setError("步驟4：取得個人資料...");
+      if (!liff) throw new Error("LIFF SDK not loaded");
+      await Promise.race([liff.init({ liffId: LIFF_ID }), new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 10000))]);
+      if (liff.isLoggedIn()) {
         const profile = await liff.getProfile();
-
-        setError(`步驟5：呼叫 API... (userId=${profile.userId.slice(0, 8)})`);
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lineUserId: profile.userId,
-            displayName: profile.displayName,
-            avatarUrl: profile.pictureUrl ?? null,
-          }),
-        });
+        const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lineUserId: profile.userId, displayName: profile.displayName, avatarUrl: profile.pictureUrl ?? null }) });
         if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
-
-        setError("步驟6：登入成功，跳轉中...");
-        const user = await res.json();
-        setUser(user);
-        router.push("/groups");
-      } else {
-        setError("步驟3b：跳轉 LINE 授權...");
-        liff.login({ redirectUri: window.location.href });
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("LIFF login failed", e);
-      setError(`❌ 失敗：${msg}`);
-      setLoading(false);
-    }
+        setUser(await res.json()); router.push("/groups");
+      } else { liff.login({ redirectUri: window.location.href }); }
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); setLoading(false); }
   };
 
-  const loginAsDemo = async (demo: (typeof DEMO_USERS)[0]) => {
-    setLoading(true);
-    setSelectedDemo(demo.lineUserId);
-    setError(null);
+  const loginAsDemo = async (demo: typeof DEMO_USERS[0]) => {
+    setLoading(true); setSelectedDemo(demo.lineUserId); setError(null);
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(demo),
-      });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const user = await res.json();
-      setUser(user);
-      router.push("/groups");
-    } catch {
-      setError("登入失敗，請確認資料庫已設定");
-      setLoading(false);
-      setSelectedDemo(null);
-    }
+      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(demo) });
+      if (!res.ok) throw new Error("登入失敗，請確認資料庫已設定");
+      setUser(await res.json()); router.push("/groups");
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); setLoading(false); setSelectedDemo(null); }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-line-green/10 to-white">
-      <div className="flex-1 flex flex-col items-center justify-center px-8 pt-16 pb-8">
-        <div className="w-20 h-20 rounded-3xl overflow-hidden mb-6 shadow-lg">
+    <div className="min-h-screen flex flex-col bg-[#1E2340]">
+      {/* Hero section */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 pb-4 pt-16">
+        {/* App icon */}
+        <div className="w-20 h-20 rounded-[22px] overflow-hidden mb-6" style={{ boxShadow: "0 8px 32px rgba(30,35,64,0.4)" }}>
           <Image src="/appicon.png" alt="SplitGo" width={80} height={80} className="w-full h-full object-cover" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">SplitGo</h1>
-        <p className="text-gray-500 text-center text-base leading-relaxed">
-          輕鬆分帳，告別帳務糾紛
-          <br />
-          旅遊・室友・家庭一把罩
+
+        <h1 className="text-[32px] font-bold text-white leading-tight mb-2">SplitGo</h1>
+        <p className="text-[#A0A8CC] text-[15px] text-center leading-relaxed">
+          輕鬆分帳，告別帳務糾紛<br />旅遊・室友・家庭一把罩
         </p>
+
+        {/* Feature pills */}
         <div className="flex flex-wrap gap-2 mt-6 justify-center">
           {["多幣別自動換算", "LINE 推播通知", "最少交易結算"].map((f) => (
-            <span key={f} className="bg-white border border-gray-200 text-gray-600 text-xs px-3 py-1.5 rounded-full shadow-sm">
-              {f}
-            </span>
+            <span key={f} className="bg-[#2A3060] text-[#A0A8CC] text-[13px] px-3 py-1.5 rounded-full border border-[#3A4070]">{f}</span>
           ))}
         </div>
       </div>
 
-      <div className="px-6 pb-10 space-y-3">
+      {/* Login card */}
+      <div className="bg-[#F5F6FA] rounded-t-[28px] px-6 pt-8 pb-10" style={{ boxShadow: "0 -4px 32px rgba(0,0,0,0.2)" }}>
         {error && (
-          <p className="text-sm text-red-500 text-center bg-red-50 rounded-xl py-2 px-4">{error}</p>
+          <div className="mb-4 bg-[#FFE8EC] rounded-ds-md px-4 py-3">
+            <p className="text-[#FF4B6E] text-[13px]">{error}</p>
+          </div>
         )}
+
         {isLiffEnabled ? (
-          <Button onClick={loginWithLine} loading={loading} className="w-full h-14 text-base">
-            <div className="w-5 h-5 bg-white rounded-sm flex items-center justify-center">
-              <span className="text-line-green font-black text-xs leading-none">L</span>
+          <button onClick={loginWithLine} disabled={loading}
+            className="btn-primary w-full flex items-center justify-center gap-3 disabled:opacity-60">
+            <div className="w-5 h-5 bg-white rounded flex items-center justify-center flex-shrink-0">
+              <span className="text-[#06C755] font-bold text-xs leading-none">L</span>
             </div>
-            使用 LINE 登入
-          </Button>
+            {loading ? "登入中..." : "使用 LINE 登入"}
+          </button>
         ) : (
-          <div className="space-y-2">
-            <p className="text-xs text-center text-gray-400 mb-3">開發模式：選擇測試帳號</p>
+          <div className="space-y-2.5">
+            <p className="text-[13px] text-center text-[#8A90B0] mb-4">開發模式 — 選擇測試帳號</p>
             {DEMO_USERS.map((demo) => (
-              <Button
-                key={demo.lineUserId}
-                variant="secondary"
-                onClick={() => loginAsDemo(demo)}
-                loading={loading && selectedDemo === demo.lineUserId}
+              <button key={demo.lineUserId} onClick={() => loginAsDemo(demo)}
                 disabled={loading}
-                className="w-full"
-              >
-                <div className="w-7 h-7 rounded-full bg-line-green text-white flex items-center justify-center text-xs font-bold">
-                  {demo.displayName[0]}
+                className="w-full flex items-center gap-3 bg-white rounded-ds-lg px-4 py-3.5 text-left border border-[#E8E9F3] active:scale-[0.98] transition-transform disabled:opacity-60"
+                style={{ boxShadow: "var(--shadow-sm)" }}>
+                <div className="w-10 h-10 rounded-full bg-[#7B5EA7] flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">{demo.displayName[0]}</span>
                 </div>
-                以 {demo.displayName} 身份登入
-              </Button>
+                <div>
+                  <p className="font-semibold text-[#1A1D2E] text-[15px]">{demo.displayName}</p>
+                  <p className="text-[#8A90B0] text-[13px]">測試帳號</p>
+                </div>
+                {loading && selectedDemo === demo.lineUserId && (
+                  <div className="ml-auto w-5 h-5 border-2 border-[#bae8e8] border-t-transparent rounded-full animate-spin" />
+                )}
+              </button>
             ))}
           </div>
         )}
-        <p className="text-xs text-center text-gray-400 mt-4">
-          登入即代表您同意 SplitGo 使用條款與隱私政策
-        </p>
+        <p className="text-[12px] text-center text-[#8A90B0] mt-5">登入即代表您同意使用條款與隱私政策</p>
       </div>
     </div>
   );

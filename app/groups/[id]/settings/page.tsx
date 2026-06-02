@@ -95,35 +95,36 @@ export default function GroupSettingsPage() {
   };
 
   if (!group) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-2 border-line-green border-t-transparent rounded-full animate-spin" />
+    <div className="flex items-center justify-center min-h-screen bg-[#F5F6FA]">
+      <div className="w-8 h-8 border-2 border-[#bae8e8] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   const isCreator = user?.id === group.createdById;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-100 px-4 py-3 sticky top-0 z-10 flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-1.5 rounded-full hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+    <div className="flex flex-col min-h-screen bg-[#F5F6FA]">
+      <header className="bg-[#1E2340] px-4 sticky top-0 z-10 flex items-center gap-3" style={{ height: 60 }}>
+        <button onClick={() => router.back()} className="btn-ghost flex-shrink-0">
+          <ArrowLeft className="w-5 h-5 text-[#A0A8CC]" />
         </button>
-        <h1 className="font-bold text-gray-900 flex-1">群組設定</h1>
-        <Button onClick={save} loading={saving} className="h-9 px-4 text-sm">
-          儲存
-        </Button>
+        <h1 className="font-semibold text-white text-[17px] flex-1">群組設定</h1>
+        <button onClick={save} disabled={saving}
+          className="bg-[#2c698d] text-white text-[13px] font-semibold px-4 py-2 rounded-full disabled:opacity-60">
+          {saving ? "儲存中..." : "儲存"}
+        </button>
       </header>
 
       <main className="flex-1 overflow-auto px-4 py-4 space-y-4 pb-10">
         {saveError && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
+          <div className="bg-[#FFE8EC] rounded-ds-md px-4 py-3 text-[13px] text-[#2c698d]">
             {saveError}
           </div>
         )}
 
         {/* 群組圖示 */}
         <section className="card space-y-3">
-          <h2 className="font-semibold text-gray-900">群組圖示</h2>
+          <h2 className="font-semibold text-[#1A1D2E] text-[15px]">群組圖示</h2>
           <div className="flex flex-wrap gap-2">
             {GROUP_ICONS.map((emoji) => (
               <button
@@ -133,8 +134,8 @@ export default function GroupSettingsPage() {
                 className={cn(
                   "w-11 h-11 rounded-xl text-2xl flex items-center justify-center border-2 transition-all",
                   icon === emoji
-                    ? "border-line-green bg-line-green/10 scale-110"
-                    : "border-gray-100 bg-white"
+                    ? "border-[#2c698d] bg-[#EEF4FA] scale-110"
+                    : "border-[#E8E9F3] bg-white"
                 )}
               >
                 {emoji}
@@ -145,7 +146,7 @@ export default function GroupSettingsPage() {
 
         {/* 基本資訊 */}
         <section className="card space-y-4">
-          <h2 className="font-semibold text-gray-900">基本資訊</h2>
+          <h2 className="font-semibold text-[#1A1D2E] text-[15px]">基本資訊</h2>
 
           <div>
             <label className="label">群組名稱</label>
@@ -173,9 +174,9 @@ export default function GroupSettingsPage() {
               ))}
             </select>
             {currencyWarning && (
-              <div className="mt-2 flex items-start gap-2 bg-orange-50 rounded-xl p-3">
-                <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-orange-700">
+              <div className="mt-2 flex items-start gap-2 bg-[#F5A623]/10 rounded-ds-sm p-3">
+                <AlertTriangle className="w-4 h-4 text-[#F5A623] mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-[#F5A623]">
                   變更結算幣別後，已存在的消費金額不會重新換算，可能造成餘額不準確。建議在新增消費前修改。
                 </p>
               </div>
@@ -186,8 +187,8 @@ export default function GroupSettingsPage() {
         {/* 成員管理 */}
         <section className="card space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">成員管理</h2>
-            <span className="text-xs text-gray-400">{group.members.length} 人</span>
+            <h2 className="font-semibold text-[#1A1D2E] text-[15px]">成員管理</h2>
+            <span className="text-[12px] text-[#8A90B0]">{group.members.length} 人</span>
           </div>
           <div className="space-y-2">
             {group.members.map((m) => {
@@ -201,7 +202,7 @@ export default function GroupSettingsPage() {
                       {m.user.displayName}
                       {isMe && <span className="text-xs text-gray-400 ml-1">（我）</span>}
                     </p>
-                    {isOwner && <p className="text-xs text-line-green">群組建立者</p>}
+                    {isOwner && <p className="text-[12px] text-[#2c698d]">群組建立者</p>}
                   </div>
                   {isCreator && !isOwner && (
                     <button
@@ -226,17 +227,17 @@ export default function GroupSettingsPage() {
         {/* 危險操作 */}
         {isCreator && (
           <section className="card border-red-100 space-y-3">
-            <h2 className="font-semibold text-red-500">危險操作</h2>
+            <h2 className="font-semibold text-[#2c698d] text-[15px]">危險操作</h2>
             {!showDeleteConfirm ? (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-full py-2.5 rounded-xl border border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors"
+                className="w-full py-2.5 rounded-full border border-[#2c698d] text-[#2c698d] text-[13px] font-semibold hover:bg-[#EEF4FA] transition-colors"
               >
                 刪除群組
               </button>
             ) : (
               <div className="space-y-2">
-                <p className="text-sm text-red-600 font-medium">確定要刪除這個群組嗎？所有消費紀錄將一併刪除，無法復原。</p>
+                <p className="text-[13px] text-[#8A90B0]">確定要刪除這個群組嗎？所有消費紀錄將一併刪除，無法復原。</p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
@@ -246,7 +247,7 @@ export default function GroupSettingsPage() {
                   </button>
                   <button
                     onClick={deleteGroup}
-                    className="py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium"
+                    className="py-2.5 rounded-full bg-[#2c698d] text-white text-[13px] font-semibold"
                   >
                     確定刪除
                   </button>

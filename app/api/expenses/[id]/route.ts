@@ -39,7 +39,7 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { title, amount, currency, payments, splitType, splits, customFxRate, category, note } = body;
+  const { title, amount, currency, payments, splitType, splits, customFxRate, category, note, date } = body;
 
   const expense = await prisma.expense.findUnique({
     where: { id },
@@ -76,6 +76,7 @@ export async function PATCH(
           splitType,
           category: category ?? null,
           note: note ?? null,
+          date: date ? new Date(date) : undefined,
           payments: { create: paymentData },
           splits: { create: splitData },
         },

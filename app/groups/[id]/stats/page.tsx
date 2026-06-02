@@ -134,8 +134,8 @@ export default function StatsPage() {
   }, [categoryStats]);
 
   if (!group) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-2 border-line-green border-t-transparent rounded-full animate-spin" />
+    <div className="flex items-center justify-center min-h-screen bg-[#F5F6FA]">
+      <div className="w-8 h-8 border-2 border-[#bae8e8] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 

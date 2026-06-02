@@ -255,20 +255,20 @@ export default function AddExpensePage() {
 
   if (!group) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-2 border-line-green border-t-transparent rounded-full animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-[#F5F6FA]">
+        <div className="w-8 h-8 border-2 border-[#bae8e8] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-[#F5F6FA]">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-4 py-3 sticky top-0 z-10 flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-1.5 rounded-full hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+      <header className="bg-[#1E2340] px-4 sticky top-0 z-10 flex items-center gap-3" style={{ height: 60 }}>
+        <button onClick={() => router.back()} className="btn-ghost flex-shrink-0">
+          <ArrowLeft className="w-5 h-5 text-[#A0A8CC]" />
         </button>
-        <h1 className="font-bold text-gray-900">新增消費</h1>
+        <h1 className="font-semibold text-white text-[17px]">新增消費</h1>
       </header>
 
       <main className="flex-1 overflow-auto px-4 py-4 space-y-4 pb-28">
@@ -320,8 +320,8 @@ export default function AddExpensePage() {
 
             {/* FX rate */}
             {currency !== group.baseCurrency && (
-              <div className="mt-2 bg-blue-50 rounded-xl p-3 space-y-2">
-                <div className="flex items-center gap-1.5 text-xs text-blue-700">
+              <div className="mt-2 bg-[#EEF4FA] rounded-ds-sm p-3 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs text-[#2c698d]">
                   <Info className="w-3.5 h-3.5" />
                   <span>
                     自動匯率：1 {currency} ≈ {autoFxRate?.toFixed(4) ?? "..."} {group.baseCurrency}
@@ -349,10 +349,10 @@ export default function AddExpensePage() {
                   type="button"
                   onClick={() => setCategory(category === cat ? "" : cat)}
                   className={cn(
-                    "px-3 py-1.5 rounded-full text-sm border transition-colors",
+                    "px-3 py-1.5 rounded-full text-[13px] font-medium border transition-colors",
                     category === cat
-                      ? "bg-line-green text-white border-line-green"
-                      : "bg-white text-gray-600 border-gray-200"
+                      ? "bg-[#2c698d] text-white border-[#2c698d]"
+                      : "bg-white text-[#8A90B0] border-[#E8E9F3]"
                   )}
                 >
                   {cat}
@@ -365,15 +365,15 @@ export default function AddExpensePage() {
         {/* ── 付款明細 ── */}
         <section className="card space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">付款明細</h2>
+            <h2 className="font-semibold text-[#1A1D2E] text-[15px]">付款明細</h2>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">多人付款</span>
+              <span className="text-[13px] text-[#8A90B0]">多人付款</span>
               <button
                 type="button"
                 onClick={() => setMultiPayer((v) => !v)}
                 className={cn(
                   "relative w-10 h-5 rounded-full transition-colors",
-                  multiPayer ? "bg-line-green" : "bg-gray-300"
+                  multiPayer ? "bg-[#2c698d]" : "bg-[#E8E9F3]"
                 )}
               >
                 <span
@@ -407,10 +407,10 @@ export default function AddExpensePage() {
                         )
                       }
                       className={cn(
-                        "flex items-center gap-2 p-3 rounded-xl border transition-colors",
+                        "flex items-center gap-2 p-3 rounded-ds-md border transition-colors",
                         isSelected
-                          ? "border-line-green bg-line-green/5"
-                          : "border-gray-200 bg-white"
+                          ? "border-[#2c698d] bg-[#EEF4FA]"
+                          : "border-[#E8E9F3] bg-white"
                       )}
                     >
                       <Avatar name={m.user.displayName} src={m.user.avatarUrl} size="sm" />
@@ -452,10 +452,10 @@ export default function AddExpensePage() {
               {/* 付款合計狀態 */}
               {total > 0 && (
                 <div className={cn(
-                  "flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium",
+                  "flex items-center justify-between rounded-ds-sm px-3 py-2 text-[13px] font-medium",
                   paymentBalanced
-                    ? "bg-green-50 text-green-700"
-                    : "bg-orange-50 text-orange-700"
+                    ? "bg-[#3DBCAA]/10 text-[#3DBCAA]"
+                    : "bg-[#F5A623]/10 text-[#F5A623]"
                 )}>
                   <span>付款合計</span>
                   <span>
@@ -476,7 +476,7 @@ export default function AddExpensePage() {
 
         {/* ── 分攤方式 ── */}
         <section className="card space-y-3">
-          <h2 className="font-semibold text-gray-900">分攤設定</h2>
+          <h2 className="font-semibold text-[#1A1D2E] text-[15px]">分攤設定</h2>
 
           {/* 分攤類型 */}
           <div className="grid grid-cols-3 gap-2">
@@ -489,10 +489,10 @@ export default function AddExpensePage() {
                   type="button"
                   onClick={() => setSplitType(type)}
                   className={cn(
-                    "py-2.5 px-2 rounded-xl text-center border transition-colors",
+                    "py-2.5 px-2 rounded-ds-sm text-center border transition-colors",
                     splitType === type
-                      ? "border-line-green bg-line-green text-white"
-                      : "border-gray-200 text-gray-600 bg-white"
+                      ? "border-[#2c698d] bg-[#2c698d] text-white"
+                      : "border-[#E8E9F3] text-[#8A90B0] bg-white"
                   )}
                 >
                   <p className="text-sm font-semibold">{labels[type]}</p>
@@ -515,8 +515,8 @@ export default function AddExpensePage() {
                 <div
                   key={m.user.id}
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-xl border transition-colors",
-                    row.included ? "border-line-green/40 bg-line-green/5" : "border-gray-100 bg-gray-50 opacity-60"
+                    "flex items-center gap-3 p-3 rounded-ds-md border transition-colors",
+                    row.included ? "border-[#2c698d]/30 bg-[#EEF4FA]" : "border-[#E8E9F3] bg-[#F5F6FA] opacity-60"
                   )}
                 >
                   {/* 勾選 */}
@@ -524,8 +524,8 @@ export default function AddExpensePage() {
                     type="button"
                     onClick={() => updateSplit(m.user.id, { included: !row.included })}
                     className={cn(
-                      "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0",
-                      row.included ? "bg-line-green border-line-green" : "border-gray-300"
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                      row.included ? "bg-[#2c698d] border-[#2c698d]" : "border-[#E8E9F3]"
                     )}
                   >
                     {row.included && (
@@ -557,11 +557,11 @@ export default function AddExpensePage() {
                   {/* 固定金額模式：最後一人自動補齊 */}
                   {row.included && splitType === "FIXED" && (
                     isLast ? (
-                      <div className="flex items-center gap-1 bg-yellow-50 rounded-lg px-2 py-1">
-                        <span className="text-sm font-semibold text-yellow-700">
+                      <div className="flex items-center gap-1 bg-[#F5A623]/10 rounded-ds-sm px-2 py-1">
+                        <span className="text-[13px] font-semibold text-[#F5A623]">
                           {computedAmt != null ? computedAmt.toFixed(2) : "—"}
                         </span>
-                        <span className="text-xs text-yellow-600">{group.baseCurrency} 自動</span>
+                        <span className="text-[11px] text-[#F5A623]">{group.baseCurrency} 自動</span>
                       </div>
                     ) : (
                       <div className="relative w-28">
@@ -596,10 +596,10 @@ export default function AddExpensePage() {
           {/* 分攤合計狀態 */}
           {totalBase > 0 && splitType === "FIXED" && (
             <div className={cn(
-              "flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium",
+              "flex items-center justify-between rounded-ds-sm px-3 py-2 text-[13px] font-medium",
               Math.abs(splitDiff) < 0.01
-                ? "bg-green-50 text-green-700"
-                : "bg-orange-50 text-orange-700"
+                ? "bg-[#3DBCAA]/10 text-[#3DBCAA]"
+                : "bg-[#F5A623]/10 text-[#F5A623]"
             )}>
               <span>分攤合計</span>
               <span>
@@ -640,8 +640,8 @@ export default function AddExpensePage() {
                       </p>
                     </div>
                     <div className={cn(
-                      "flex items-center gap-1 text-sm font-bold",
-                      p.net > 0.01 ? "text-green-600" : p.net < -0.01 ? "text-red-500" : "text-gray-400"
+                      "flex items-center gap-1 text-[13px] font-bold",
+                      p.net > 0.01 ? "text-[#3DBCAA]" : p.net < -0.01 ? "text-[#2c698d]" : "text-[#8A90B0]"
                     )}>
                       {p.net > 0.01 && <TrendingUp className="w-3.5 h-3.5" />}
                       {p.net < -0.01 && <TrendingDown className="w-3.5 h-3.5" />}
@@ -674,15 +674,14 @@ export default function AddExpensePage() {
       </main>
 
       {/* Submit */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 p-4">
-        <Button
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#F5F6FA] border-t border-[#E8E9F3] px-5 py-4">
+        <button
           onClick={submit}
-          loading={submitting}
-          disabled={!canSubmit}
-          className="w-full h-14 text-base"
+          disabled={!canSubmit || submitting}
+          className="btn-primary w-full py-4 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          新增消費
-        </Button>
+          {submitting ? "新增中..." : "新增消費"}
+        </button>
       </div>
     </div>
   );

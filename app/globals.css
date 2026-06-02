@@ -1,36 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    --color-primary:        #2c698d;
+    --color-primary-hover:  #E63D5F;
+    --color-primary-light:  #FFE8EC;
+    --color-accent-purple:  #7B5EA7;
+    --color-accent-blue:    #4A90D9;
+    --color-accent-orange:  #F5A623;
+    --color-accent-teal:    #3DBCAA;
+    --color-surface-dark:   #1E2340;
+    --color-surface-dark-2: #2A3060;
+    --color-surface-light:  #F5F6FA;
+    --color-surface-card:   #FFFFFF;
+    --color-surface-input:  #F0F1F7;
+    --color-text-primary:   #1A1D2E;
+    --color-text-secondary: #8A90B0;
+    --color-text-on-dark:   #FFFFFF;
+    --color-text-on-dark-muted: #A0A8CC;
+    --color-border:         #E8E9F3;
+    --color-border-dark:    #3A4070;
+    --color-success:        #3DBCAA;
+    --color-warning:        #F5A623;
+    --color-error:          #FF4B6E;
+    --shadow-sm:  0 2px 8px rgba(30,35,64,0.08);
+    --shadow-md:  0 4px 16px rgba(30,35,64,0.12);
+    --shadow-fab: 0 6px 20px rgba(255,75,110,0.40);
     --line-green: #06C755;
   }
 
+  * { box-sizing: border-box; }
+
   body {
-    @apply bg-gray-50 text-gray-900;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+    background-color: var(--color-surface-light);
+    color: var(--color-text-primary);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: "tnum"; /* tabular nums for amounts */
+    -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer components {
-  .btn-primary {
-    @apply bg-line-green text-white font-semibold py-3 px-6 rounded-xl active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed w-full;
-  }
-
-  .btn-secondary {
-    @apply bg-white border border-gray-200 text-gray-700 font-medium py-3 px-6 rounded-xl active:scale-95 transition-transform w-full;
-  }
-
+  /* ── Card ── */
   .card {
-    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-4;
+    @apply bg-white rounded-ds-lg p-4;
+    box-shadow: var(--shadow-sm);
   }
 
+  /* ── Input ── */
   .input-field {
-    @apply w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-line-green focus:border-transparent bg-white;
+    @apply w-full bg-[#F0F1F7] rounded-ds-sm px-4 py-3 text-[15px] text-[#1A1D2E] placeholder-[#8A90B0];
+    @apply border-none focus:outline-none focus:ring-2 focus:ring-[#2c698d];
+    height: 48px;
   }
 
   .label {
-    @apply text-sm font-medium text-gray-600 mb-1 block;
+    @apply text-[13px] font-medium text-[#8A90B0] mb-1.5 block;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    @apply bg-[#2c698d] text-white font-semibold text-[15px] px-6 py-3.5 rounded-full;
+    @apply active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: var(--shadow-fab);
+    min-width: 160px;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border border-[#2c698d] text-[#2c698d] font-semibold text-[15px] px-6 py-3.5 rounded-full;
+    @apply active:scale-95 transition-all disabled:opacity-50;
+    min-width: 160px;
+  }
+
+  .btn-ghost {
+    @apply bg-[#F0F1F7] rounded-full flex items-center justify-center;
+    width: 40px; height: 40px;
+  }
+
+  /* ── Status chips ── */
+  .chip-owe {
+    @apply bg-[#FFE8EC] text-[#2c698d] text-[13px] font-medium px-2.5 py-1 rounded-full;
+  }
+  .chip-settled {
+    @apply text-[13px] font-medium px-2.5 py-1 rounded-full;
+    background: rgba(61,188,170,0.12);
+    color: #3DBCAA;
+  }
+  .chip-pending {
+    @apply text-[13px] font-medium px-2.5 py-1 rounded-full;
+    background: rgba(245,166,35,0.12);
+    color: #F5A623;
+  }
+
+  /* ── TopBar ── */
+  .topbar {
+    @apply bg-[#1E2340] px-5 flex items-center gap-3;
+    height: 60px;
+  }
+
+  /* ── Section header ── */
+  .section-header {
+    @apply text-[13px] font-medium text-[#8A90B0] px-0 pt-4 pb-2;
   }
 }
