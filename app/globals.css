@@ -29,7 +29,7 @@
     --color-error:          #FF4B6E;
     --shadow-sm:  0 2px 8px rgba(30,35,64,0.08);
     --shadow-md:  0 4px 16px rgba(30,35,64,0.12);
-    --shadow-fab: 0 6px 20px rgba(255,75,110,0.40);
+    --shadow-fab: 0 6px 20px #e3f6f5;
     --line-green: #06C755;
   }
 
