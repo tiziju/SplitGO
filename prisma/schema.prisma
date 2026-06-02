@@ -64,6 +64,7 @@ model Expense {
   splitType  String   @default("EQUAL") @map("split_type")
   category   String?
   note       String?
+  date       DateTime @default(now())
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 

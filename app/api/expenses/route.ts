@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     customFxRate,
     category,
     note,
+    date,
   }: {
     groupId: string;
     title: string;
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
     customFxRate?: number;
     category?: string;
     note?: string;
+    date?: string;
   } = body;
 
   if (!groupId || !title || !amount || !currency || !payments?.length || !splits?.length) {
@@ -76,6 +78,7 @@ export async function POST(req: NextRequest) {
       splitType,
       category: category ?? null,
       note: note ?? null,
+      date: date ? new Date(date) : new Date(),
       payments: { create: paymentData },
       splits: { create: splitData },
     },

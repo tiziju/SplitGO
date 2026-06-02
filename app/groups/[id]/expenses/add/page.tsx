@@ -61,6 +61,7 @@ export default function AddExpensePage() {
   const [customFxRate, setCustomFxRate] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 16));
 
   // ─── 初始化 ───────────────────────────────────────────────
   const fetchGroup = useCallback(async () => {
@@ -70,10 +71,12 @@ export default function AddExpensePage() {
     setGroup(data);
     setCurrency(data.baseCurrency);
 
-    // 預設：第一人（自己）付全額
-    setPayments(data.members.map((m, i) => ({
+    // 預設：當前使用者付全額；若不在成員中則預選第一位
+    const defaultPayerId = data.members.find((m) => m.user.id === user?.id)?.user.id
+      ?? data.members[0]?.user.id;
+    setPayments(data.members.map((m) => ({
       userId: m.user.id,
-      amount: i === 0 && user?.id === m.user.id ? "" : "",
+      amount: m.user.id === defaultPayerId ? "selected" : "",
     })));
 
     // 預設：全員平均分攤
@@ -229,6 +232,7 @@ export default function AddExpensePage() {
         customFxRate: customFxRate ? parseFloat(customFxRate) : undefined,
         category: category || undefined,
         note: note.trim() || undefined,
+        date: date ? new Date(date).toISOString() : undefined,
       }),
     });
 
@@ -271,6 +275,15 @@ export default function AddExpensePage() {
 
         {/* ── 基本資訊 ── */}
         <section className="card space-y-4">
+          <div>
+            <label className="label">日期 & 時間</label>
+            <input
+              className="input-field"
+              type="datetime-local"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
           <div>
             <label className="label">消費名稱 *</label>
             <input
@@ -389,7 +402,7 @@ export default function AddExpensePage() {
                         setPayments((prev) =>
                           prev.map((p) => ({
                             ...p,
-                            amount: p.userId === m.user.id ? (totalAmount || "1") : "",
+                            amount: p.userId === m.user.id ? "selected" : "",
                           }))
                         )
                       }

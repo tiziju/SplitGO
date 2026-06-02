@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { formatCurrency } from "@/lib/utils";
 import {
   ArrowLeft, Plus, Copy, Check, Calculator, Receipt,
-  TrendingUp, TrendingDown, Minus, Settings
+  TrendingUp, TrendingDown, Minus, Settings, BarChart2
 } from "lucide-react";
 
 interface User {
@@ -43,6 +43,7 @@ interface Expense {
   splitType: string;
   category?: string | null;
   splits: Split[];
+  date?: string | null;
   createdAt: string;
 }
 
@@ -81,7 +82,7 @@ export default function GroupDetailPage() {
   const router = useRouter();
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"expenses" | "balances" | "settlements">("expenses");
+  const [tab, setTab] = useState<"expenses" | "balances" | "settlements" | "stats">("expenses");
   const [copied, setCopied] = useState(false);
   const [settling, setSettling] = useState(false);
 
@@ -212,8 +213,8 @@ export default function GroupDetailPage() {
 
       {/* Tabs */}
       <div className="bg-white border-b border-gray-100 flex">
-        {(["expenses", "balances", "settlements"] as const).map((t) => {
-          const labels = { expenses: "消費紀錄", balances: "餘額", settlements: "結算" };
+        {(["expenses", "balances", "settlements", "stats"] as const).map((t) => {
+          const labels = { expenses: "消費紀錄", balances: "餘額", settlements: "結算", stats: "統計" };
           return (
             <button
               key={t}
@@ -251,7 +252,7 @@ export default function GroupDetailPage() {
                           ? `${e.payments[0].user.displayName} 付款`
                           : `${e.payments.map((p) => p.user.displayName).join("、")} 共同付款`
                         }{" · "}
-                        {new Date(e.createdAt).toLocaleDateString("zh-TW")}
+                        {new Date(e.date ?? e.createdAt).toLocaleDateString("zh-TW")}
                       </p>
                       {e.currency !== group.baseCurrency && (
                         <p className="text-xs text-gray-400 mt-0.5">
@@ -375,6 +376,19 @@ export default function GroupDetailPage() {
               </>
             )}
           </>
+        )}
+
+        {tab === "stats" && (
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <BarChart2 className="w-12 h-12 text-line-green" />
+            <p className="text-gray-600 font-medium">查看消費統計分析</p>
+            <button
+              onClick={() => router.push(`/groups/${groupId}/stats`)}
+              className="bg-line-green text-white px-6 py-3 rounded-2xl font-medium text-sm"
+            >
+              開啟統計頁面
+            </button>
+          </div>
         )}
       </main>
 
