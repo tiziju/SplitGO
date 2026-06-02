@@ -313,7 +313,7 @@ export default function GroupDetailPage() {
                           </>
                         )}
                       </div>
-                      <Avatar name={b.displayName} src={(b as Balance & { avatarUrl?: string | null }).avatarUrl} size="sm" className="flex-shrink-0 ring-2 ring-white" style={{ boxShadow: "var(--shadow-sm)" }} />
+                      <Avatar name={b.displayName} src={(b as Balance & { avatarUrl?: string | null }).avatarUrl} size="sm" className="flex-shrink-0 ring-2 ring-white" />
                       <div className="flex-1 flex items-center gap-2">
                         {isPos && (
                           <>
