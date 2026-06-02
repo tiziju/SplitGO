@@ -24,7 +24,6 @@ function computeFallbackRates(baseCurrency: string): Record<string, number> {
   const baseToTwd = FALLBACK_RATES_TO_TWD[baseCurrency] ?? 1;
   const rates: Record<string, number> = {};
   for (const [k, vToTwd] of Object.entries(FALLBACK_RATES_TO_TWD)) {
-    // 1 baseCurrency = baseToTwd TWD = baseToTwd / vToTwd units of k
     rates[k] = baseToTwd / vToTwd;
   }
   return rates;
@@ -32,6 +31,43 @@ function computeFallbackRates(baseCurrency: string): Record<string, number> {
 
 // Re-export from the client-safe module
 export { SUPPORTED_CURRENCIES } from "./currencies";
+
+/**
+ * Fetch rates using USD as the pivot currency (works with free plan).
+ * Converts USD-based rates to any baseCurrency perspective.
+ */
+async function fetchRatesViaUsd(apiKey: string, baseCurrency: string): Promise<Record<string, number> | null> {
+  // Check USD cache first
+  const now = Date.now();
+  const usdCached = FX_CACHE["USD"];
+  let usdRates: Record<string, number>;
+
+  if (usdCached && now - usdCached.fetchedAt < CACHE_TTL_MS) {
+    usdRates = usdCached.rates;
+  } else {
+    try {
+      const res = await fetch(`https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`);
+      const data = await res.json();
+      if (data.result !== "success") return null;
+      usdRates = data.conversion_rates;
+      FX_CACHE["USD"] = { rates: usdRates, fetchedAt: now };
+    } catch {
+      return null;
+    }
+  }
+
+  // Convert: usdRates[X] = "1 USD = X units"
+  // We want: rates[X] = "1 baseCurrency = X units"
+  // Formula: rates[X] = usdRates[X] / usdRates[baseCurrency]
+  const baseInUsd = usdRates[baseCurrency];
+  if (!baseInUsd) return null;
+
+  const rates: Record<string, number> = {};
+  for (const [k, v] of Object.entries(usdRates)) {
+    rates[k] = v / baseInUsd;
+  }
+  return rates;
+}
 
 export async function getFxRates(baseCurrency = "TWD"): Promise<Record<string, number>> {
   const apiKey = process.env.EXCHANGE_RATE_API_KEY;
@@ -46,20 +82,14 @@ export async function getFxRates(baseCurrency = "TWD"): Promise<Record<string, n
     return computeFallbackRates(baseCurrency);
   }
 
-  try {
-    const res = await fetch(
-      `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${baseCurrency}`
-    );
-    const data = await res.json();
-    if (data.result === "success") {
-      FX_CACHE[baseCurrency] = { rates: data.conversion_rates, fetchedAt: now };
-      return data.conversion_rates;
-    }
-  } catch {
-    // fall through to fallback
+  // Use USD as pivot — works on free plan
+  const rates = await fetchRatesViaUsd(apiKey, baseCurrency);
+  if (rates) {
+    FX_CACHE[baseCurrency] = { rates, fetchedAt: now };
+    return rates;
   }
 
-  // API failed — compute proper fallback rates
+  // All failed — use static fallback
   return computeFallbackRates(baseCurrency);
 }
 
