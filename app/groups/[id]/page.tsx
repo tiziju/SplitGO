@@ -283,7 +283,7 @@ export default function GroupDetailPage() {
                 <div className="mt-3 pt-3 border-t border-[#E8E9F3] flex flex-wrap gap-1.5">
                   {e.splits.map((s) => (
                     <div key={s.userId} className="flex items-center gap-1.5 bg-[#F0F1F7] rounded-full px-2.5 py-1">
-                      <Avatar name={s.user.displayName} size="sm" className="w-5 h-5 text-[10px]" />
+                      <Avatar name={s.user.displayName} src={s.user.avatarUrl} size="sm" className="w-5 h-5 text-[10px]" />
                       <span className="text-[#1A1D2E] text-[12px] font-medium">{s.user.displayName}</span>
                       <span className="text-[#8A90B0] text-[12px]">{formatCurrency(s.amountBase, group.baseCurrency)}</span>
                     </div>
@@ -365,7 +365,7 @@ export default function GroupDetailPage() {
                 )}
                 {group.settlements.map((s) => (
                   <div key={s.id} className={cn("card flex items-center gap-3", s.status === "DONE" && "opacity-50")}>
-                    <Avatar name={s.fromUser.displayName} size="md" />
+                    <Avatar name={s.fromUser.displayName} src={s.fromUser.avatarUrl} size="md" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-[#1A1D2E] text-[15px]">
                         <span className="text-[#FF4B6E]">{s.fromUser.displayName}</span>
