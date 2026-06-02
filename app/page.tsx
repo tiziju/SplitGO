@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
-import { Loader2 } from "lucide-react";
 
 export default function RootPage() {
   const { user, loading } = useUser();
@@ -11,8 +10,16 @@ export default function RootPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (user) router.replace("/groups");
-    else router.replace("/login");
+
+    if (user) {
+      // 已登入：保留 liff.state 參數轉到 /groups（LIFF 會自動導到目標頁）
+      const search = window.location.search;
+      router.replace(search ? `/groups${search}` : "/groups");
+    } else {
+      // 未登入：把所有 LIFF 參數帶到 /login，SDK 才能完成認證
+      const search = window.location.search;
+      router.replace(search ? `/login${search}` : "/login");
+    }
   }, [user, loading, router]);
 
   return (

@@ -20,6 +20,20 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
 
+  // 登入後要去哪裡（保留 liff.state 解碼後的路徑）
+  const getPostLoginPath = () => {
+    try {
+      const url = new URL(window.location.href);
+      const liffState = url.searchParams.get("liff.state");
+      if (liffState) {
+        const decoded = decodeURIComponent(liffState);
+        // decoded 可能是 /groups?action=create 之類
+        return decoded.startsWith("/") ? decoded : "/groups";
+      }
+    } catch {}
+    return "/groups";
+  };
+
   useEffect(() => {
     if (!isLiffEnabled) return;
     if (sessionStorage.getItem("liff_completing")) return;
@@ -39,9 +53,10 @@ export default function LoginPage() {
         const profile = await liff.getProfile();
         const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lineUserId: profile.userId, displayName: profile.displayName, avatarUrl: profile.pictureUrl ?? null }) });
         if (!res.ok) throw new Error(`API error ${res.status}`);
+        const destination = getPostLoginPath();
         sessionStorage.removeItem("liff_completing");
         setUser(await res.json());
-        router.push("/groups");
+        router.push(destination);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
         setLoading(false);
@@ -61,7 +76,7 @@ export default function LoginPage() {
         const profile = await liff.getProfile();
         const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lineUserId: profile.userId, displayName: profile.displayName, avatarUrl: profile.pictureUrl ?? null }) });
         if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
-        setUser(await res.json()); router.push("/groups");
+        setUser(await res.json()); router.push(getPostLoginPath());
       } else { liff.login({ redirectUri: window.location.href }); }
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); setLoading(false); }
   };
@@ -71,7 +86,7 @@ export default function LoginPage() {
     try {
       const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(demo) });
       if (!res.ok) throw new Error("登入失敗，請確認資料庫已設定");
-      setUser(await res.json()); router.push("/groups");
+      setUser(await res.json()); router.push(getPostLoginPath());
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); setLoading(false); setSelectedDemo(null); }
   };
 
