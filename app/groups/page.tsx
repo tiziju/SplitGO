@@ -29,6 +29,7 @@ function GroupsContent() {
   const [newGroupIcon, setNewGroupIcon] = useState("✈️");
   const [inviteCode, setInviteCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const fetchGroups = useCallback(async () => {
     if (!user) return;
@@ -54,10 +55,17 @@ function GroupsContent() {
   const createGroup = async () => {
     if (!newGroupName.trim() || !user) return;
     setSubmitting(true);
-    const res = await fetch("/api/groups", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newGroupName.trim(), baseCurrency: newGroupCurrency, icon: newGroupIcon, createdById: user.id }) });
-    const group = await res.json();
-    setShowCreate(false); setNewGroupName(""); setSubmitting(false);
-    router.push(`/groups/${group.id}`);
+    setCreateError(null);
+    try {
+      const res = await fetch("/api/groups", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newGroupName.trim(), baseCurrency: newGroupCurrency, icon: newGroupIcon, createdById: user.id }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setShowCreate(false); setNewGroupName(""); setSubmitting(false);
+      router.push(`/groups/${data.id}`);
+    } catch (e) {
+      setCreateError(e instanceof Error ? e.message : String(e));
+      setSubmitting(false);
+    }
   };
 
   const joinGroup = async () => {
@@ -165,6 +173,9 @@ function GroupsContent() {
               {["TWD","USD","JPY","EUR","KRW","HKD","SGD","THB"].map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          {createError && (
+            <div className="bg-[#FFE8EC] rounded-ds-md px-4 py-3 text-[13px] text-[#FF4B6E]">{createError}</div>
+          )}
           <button onClick={createGroup} disabled={!newGroupName.trim() || submitting} className="btn-primary w-full py-3.5 disabled:opacity-50">
             {submitting ? "建立中..." : "建立群組"}
           </button>
