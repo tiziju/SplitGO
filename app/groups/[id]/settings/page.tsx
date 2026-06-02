@@ -4,9 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
 import { SUPPORTED_CURRENCIES } from "@/lib/currencies";
-import { ArrowLeft, Trash2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Trash2, AlertTriangle, UserPlus, GitMerge, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +18,7 @@ const GROUP_ICONS = [
 interface Member {
   id: string;
   userId: string;
-  user: { id: string; displayName: string; avatarUrl?: string | null };
+  user: { id: string; displayName: string; avatarUrl?: string | null; isVirtual?: boolean };
 }
 
 interface Group {
@@ -43,8 +42,23 @@ export default function GroupSettingsPage() {
   const [baseCurrency, setBaseCurrency] = useState("TWD");
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currencyWarning, setCurrencyWarning] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // 新增虛擬成員
+  const [showAddVirtual, setShowAddVirtual] = useState(false);
+  const [virtualName, setVirtualName] = useState("");
+  const [addingVirtual, setAddingVirtual] = useState(false);
+
+  // 取代虛擬成員
+  const [mergeTarget, setMergeTarget] = useState<Member | null>(null); // 被取代的虛擬成員
+  const [mergeRealUserId, setMergeRealUserId] = useState("");
+  const [merging, setMerging] = useState(false);
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean; title: string; message: string; onConfirm: () => void; danger?: boolean;
+  }>({ open: false, title: "", message: "", onConfirm: () => {} });
+  const closeConfirm = () => setConfirmDialog((p) => ({ ...p, open: false }));
 
   const fetchGroup = useCallback(async () => {
     const res = await fetch(`/api/groups/${groupId}`);
@@ -62,8 +76,6 @@ export default function GroupSettingsPage() {
     fetchGroup();
   }, [user, userLoading, router, fetchGroup]);
 
-  const [saveError, setSaveError] = useState<string | null>(null);
-
   const save = async () => {
     if (!name.trim() || !group) return;
     setSaving(true);
@@ -75,17 +87,11 @@ export default function GroupSettingsPage() {
     });
     setSaving(false);
     if (!res.ok) {
-      const err = await res.text();
-      setSaveError(`儲存失敗：${err}`);
+      setSaveError(`儲存失敗：${await res.text()}`);
       return;
     }
     router.push(`/groups/${groupId}`);
   };
-
-  const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean; title: string; message: string; onConfirm: () => void; danger?: boolean;
-  }>({ open: false, title: "", message: "", onConfirm: () => {} });
-  const closeConfirm = () => setConfirmDialog((p) => ({ ...p, open: false }));
 
   const removeMember = (memberId: string, userId: string) => {
     setConfirmDialog({
@@ -97,6 +103,38 @@ export default function GroupSettingsPage() {
         setRemovingId(null); fetchGroup();
       },
     });
+  };
+
+  const addVirtualMember = async () => {
+    if (!virtualName.trim()) return;
+    setAddingVirtual(true);
+    await fetch(`/api/groups/${groupId}/members`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayName: virtualName.trim() }),
+    });
+    setAddingVirtual(false);
+    setVirtualName("");
+    setShowAddVirtual(false);
+    fetchGroup();
+  };
+
+  const mergeMember = async () => {
+    if (!mergeTarget || !mergeRealUserId) return;
+    setMerging(true);
+    const res = await fetch(`/api/groups/${groupId}/members/${mergeTarget.userId}/merge`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ realUserId: mergeRealUserId }),
+    });
+    setMerging(false);
+    if (!res.ok) {
+      alert("合併失敗：" + (await res.text()));
+      return;
+    }
+    setMergeTarget(null);
+    setMergeRealUserId("");
+    fetchGroup();
   };
 
   const deleteGroup = async () => {
@@ -111,6 +149,7 @@ export default function GroupSettingsPage() {
   );
 
   const isCreator = user?.id === group.createdById;
+  const realMembers = group.members.filter((m) => !m.user.isVirtual);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F6FA]">
@@ -127,7 +166,7 @@ export default function GroupSettingsPage() {
 
       <main className="flex-1 overflow-auto px-4 py-4 space-y-4 pb-10">
         {saveError && (
-          <div className="bg-[#FFE8EC] rounded-ds-md px-4 py-3 text-[13px] text-[#2c698d]">
+          <div className="bg-[#FFE8EC] rounded-ds-md px-4 py-3 text-[13px] text-[#FF4B6E]">
             {saveError}
           </div>
         )}
@@ -157,7 +196,6 @@ export default function GroupSettingsPage() {
         {/* 基本資訊 */}
         <section className="card space-y-4">
           <h2 className="font-semibold text-[#1A1D2E] text-[15px]">基本資訊</h2>
-
           <div>
             <label className="label">群組名稱</label>
             <input
@@ -168,7 +206,6 @@ export default function GroupSettingsPage() {
               placeholder="群組名稱"
             />
           </div>
-
           <div>
             <label className="label">結算幣別</label>
             <select
@@ -198,35 +235,91 @@ export default function GroupSettingsPage() {
         <section className="card space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-[#1A1D2E] text-[15px]">成員管理</h2>
-            <span className="text-[12px] text-[#8A90B0]">{group.members.length} 人</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] text-[#8A90B0]">{group.members.length} 人</span>
+              {isCreator && (
+                <button
+                  onClick={() => setShowAddVirtual(true)}
+                  className="flex items-center gap-1 text-[12px] text-[#2c698d] font-semibold bg-[#EEF4FA] px-2.5 py-1 rounded-full"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  新增虛擬成員
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* 新增虛擬成員表單 */}
+          {showAddVirtual && (
+            <div className="bg-[#F5F6FA] rounded-ds-lg p-3 flex gap-2">
+              <input
+                className="input-field flex-1 text-[14px] py-2"
+                placeholder="輸入名稱（例如：小明）"
+                value={virtualName}
+                onChange={(e) => setVirtualName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addVirtualMember()}
+                autoFocus
+              />
+              <button
+                onClick={addVirtualMember}
+                disabled={addingVirtual || !virtualName.trim()}
+                className="bg-[#2c698d] text-white text-[13px] font-semibold px-3 py-2 rounded-full disabled:opacity-50"
+              >
+                {addingVirtual ? "..." : "新增"}
+              </button>
+              <button onClick={() => { setShowAddVirtual(false); setVirtualName(""); }} className="p-2 text-[#8A90B0]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           <div className="space-y-2">
             {group.members.map((m) => {
               const isOwner = m.userId === group.createdById;
               const isMe = m.userId === user?.id;
+              const isVirtual = m.user.isVirtual;
               return (
                 <div key={m.id} className="flex items-center gap-3 py-1">
-                  <Avatar name={m.user.displayName} src={m.user.avatarUrl} size="md" />
+                  <div className="relative flex-shrink-0">
+                    <Avatar name={m.user.displayName} src={m.user.avatarUrl} size="md" />
+                    {isVirtual && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-[#F5A623] rounded-full flex items-center justify-center text-white text-[9px] font-bold">虛</span>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {m.user.displayName}
                       {isMe && <span className="text-xs text-gray-400 ml-1">（我）</span>}
                     </p>
                     {isOwner && <p className="text-[12px] text-[#2c698d]">群組建立者</p>}
+                    {isVirtual && <p className="text-[12px] text-[#F5A623]">虛擬成員</p>}
                   </div>
-                  {isCreator && !isOwner && (
-                    <button
-                      onClick={() => removeMember(m.id, m.userId)}
-                      disabled={removingId === m.userId}
-                      className="p-2 rounded-full hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors"
-                    >
-                      {removingId === m.userId ? (
-                        <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {/* 虛擬成員：可取代 */}
+                    {isCreator && isVirtual && (
+                      <button
+                        onClick={() => { setMergeTarget(m); setMergeRealUserId(""); }}
+                        className="p-2 rounded-full hover:bg-blue-50 text-[#8A90B0] hover:text-[#2c698d] transition-colors"
+                        title="取代為真實成員"
+                      >
+                        <GitMerge className="w-4 h-4" />
+                      </button>
+                    )}
+                    {/* 非建立者可移除 */}
+                    {isCreator && !isOwner && (
+                      <button
+                        onClick={() => removeMember(m.id, m.userId)}
+                        disabled={removingId === m.userId}
+                        className="p-2 rounded-full hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors"
+                      >
+                        {removingId === m.userId ? (
+                          <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -237,20 +330,60 @@ export default function GroupSettingsPage() {
         {/* 危險操作 */}
         {isCreator && (
           <section className="card space-y-3">
-            <h2 className="font-semibold text-[#2c698d] text-[15px]">危險操作</h2>
+            <h2 className="font-semibold text-[#FF4B6E] text-[15px]">危險操作</h2>
             <button
               onClick={() => setConfirmDialog({
                 open: true, title: "刪除群組", danger: true,
                 message: "所有消費紀錄將一併刪除，無法復原。",
                 onConfirm: async () => { closeConfirm(); await deleteGroup(); },
               })}
-              className="w-full py-2.5 rounded-full border border-[#2c698d] text-[#2c698d] text-[13px] font-semibold hover:bg-[#EEF4FA] transition-colors"
+              className="w-full py-2.5 rounded-full border border-[#FF4B6E] text-[#FF4B6E] text-[13px] font-semibold hover:bg-red-50 transition-colors"
             >
               刪除群組
             </button>
           </section>
         )}
       </main>
+
+      {/* 取代虛擬成員 BottomSheet */}
+      {mergeTarget && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setMergeTarget(null)} />
+          <div className="relative w-full max-w-sm bg-white rounded-ds-xl p-5 space-y-4" style={{ boxShadow: "0 8px 32px rgba(30,35,64,0.16)" }}>
+            <div>
+              <p className="font-semibold text-[#1A1D2E] text-[17px]">取代虛擬成員</p>
+              <p className="text-[#8A90B0] text-[14px] mt-1">
+                將「<span className="text-[#1A1D2E] font-medium">{mergeTarget.user.displayName}</span>」的所有消費紀錄轉移給：
+              </p>
+            </div>
+            <select
+              className="input-field"
+              value={mergeRealUserId}
+              onChange={(e) => setMergeRealUserId(e.target.value)}
+            >
+              <option value="">選擇真實成員...</option>
+              {realMembers.map((m) => (
+                <option key={m.userId} value={m.userId}>{m.user.displayName}{m.userId === user?.id ? "（我）" : ""}</option>
+              ))}
+            </select>
+            <p className="text-[12px] text-[#8A90B0]">轉移後，虛擬成員將被移除，所有消費與結算紀錄會更新為真實成員。</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setMergeTarget(null)}
+                className="py-3 rounded-full border border-[#E8E9F3] text-[#8A90B0] font-semibold text-[15px]">
+                取消
+              </button>
+              <button
+                onClick={mergeMember}
+                disabled={!mergeRealUserId || merging}
+                className="py-3 rounded-full font-semibold text-[15px] text-white bg-[#2c698d] disabled:opacity-50"
+                style={{ boxShadow: "0 4px 12px #e3f6f5" }}
+              >
+                {merging ? "處理中..." : "確認取代"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirmDialog.open}

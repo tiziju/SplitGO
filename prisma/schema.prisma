@@ -13,6 +13,7 @@ model User {
   lineUserId  String   @unique @map("line_user_id")
   displayName String   @map("display_name")
   avatarUrl   String?  @map("avatar_url")
+  isVirtual   Boolean  @default(false) @map("is_virtual")
   createdAt   DateTime @default(now()) @map("created_at")
 
   groupMembers        GroupMember[]
